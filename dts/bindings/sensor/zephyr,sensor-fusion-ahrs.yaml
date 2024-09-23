@@ -1,0 +1,40 @@
+# Copyright (c) 2024 Tomislav Milkovic
+# SPDX-License-Identifier: MIT
+
+description: |
+  Sensor Fusion based on the AHRS algorithm implemented by XIO Technologies.
+  See more info at: https://github.com/xioTechnologies/Fusion
+
+  / {
+    sensor_fusion: fusion {
+      status = "okay";
+      compatible = "zephyr,sensor-fusion-ahrs";
+      accel-dev = <&accel0>; /* Accelerometer device phandle */
+      gyro-dev = <&gyro0>; /* Gyroscope device phandle */
+      magn-dev = <&magn0>; /* Magnetometer device phandle */
+    }
+  }
+
+include: sensor-device.yaml
+
+compatible: "zephyr,sensor-fusion-ahrs"
+
+properties:
+  accel-dev:
+    type: phandle
+    required: true
+    description: |
+      Phandle of the accelerometer device to be used for sensor fusion.
+
+  gyro-dev:
+    type: phandle
+    required: true
+    description: |
+      Phandle of the gyroscope device to be used for sensor fusion.
+
+  magn-dev:
+    type: phandle
+    description: |
+      Phandle of the magnetometer device to be used for sensor fusion.
+      If not present, sensor fusion will be done with accelerometer
+      and gyroscope only.

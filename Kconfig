@@ -1,0 +1,29 @@
+# Copyright (c) 2024 Tomislav Milkovic
+# SPDX-License-Identifier: MIT
+
+config SENSOR_FUSION_AHRS
+    bool "Enable AHRS sensor fusion module"
+    default y
+    depends on DT_HAS_ZEPHYR_SENSOR_FUSION_AHRS_ENABLED
+    depends on SENSOR
+    help
+      Enable the attitude and heading reference system (AHRS) sensor
+      fusion module. This module samples the accelerometer, gyroscope
+      and (optionally) magnetometer data and uses that data to calculate
+      four outputs: quaternion, gravity, linear acceleration, and Earth
+      acceleration. This can be converted to a rotation matrix or to Euler
+      angles.
+
+      This module requires a device tree node with `zephyr,sensor-fusion-ahrs`
+      compatible to be defined and enabled in board device tree. Refer to
+      dts/bindings/sensor/zephyr,sensor-fusion-ahrs.yaml file to see which
+      properties need to be configured in this device tree node.
+
+if SENSOR_FUSION_AHRS
+
+# Logging subsystem configuration:
+module = SENSOR_FUSION_AHRS
+module-str = sensor_fusion_ahrs
+source "subsys/logging/Kconfig.template.log_config"
+
+endif # SENSOR_FUSION_AHRS
