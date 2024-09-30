@@ -33,7 +33,7 @@ enum sensor_fusion_channel
     SENSOR_FUSION_CHAN_ROLL,
     /** Euler angle for all three axes: yaw, pitch and roll, in degrees. */
     SENSOR_FUSION_CHAN_YAW_PITCH_ROLL,
-    /** linear acceleration measurement equal to the accelerometer
+    /** Linear acceleration measurement equal to the accelerometer
         measurement with the 1 g of gravity removed. */
     SENSOR_FUSION_CHAN_LINEAR_ACCEL_XYZ,
     /** Earth acceleration measurement equal to accelerometer measurement
