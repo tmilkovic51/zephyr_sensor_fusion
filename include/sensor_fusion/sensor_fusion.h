@@ -39,7 +39,8 @@ enum sensor_fusion_channel
     /** Earth acceleration measurement equal to accelerometer measurement
         in the Earth coordinate frame with the 1 g of gravity removed. */
     SENSOR_FUSION_CHAN_EARTH_ACCEL_XYZ,
-
+    /** Magnetic heading, in degrees. */
+    SENSOR_FUSION_CHAN_MAGNETIC_HEADING,
 };
 
 /**

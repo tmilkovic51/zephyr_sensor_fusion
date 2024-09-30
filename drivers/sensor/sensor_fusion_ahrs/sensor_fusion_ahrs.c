@@ -28,6 +28,7 @@ struct sensor_fusion_ahrs_data
 {
     FusionAhrs ahrs;
     FusionEuler euler;
+    float magnetic_heading;
     FusionOffset gyro_offset_vector;
     FusionVector magn_calib_hard_iron;
     FusionMatrix magn_calib_soft_iron;
@@ -52,8 +53,8 @@ struct sensor_fusion_ahrs_config
 //------------------------------ PUBLIC FUNCTIONS -----------------------------
 
 //---------------------------- PRIVATE FUNCTIONS ------------------------------
-static int sensor_fusion_ahrs_trim_low_imu_values(FusionVector *accel_vector,
-                                                  FusionVector *gyro_vector)
+static void sensor_fusion_ahrs_trim_low_values(FusionVector *accel_vector,
+                                               FusionVector *gyro_vector)
 {
     uint8_t i;
 
@@ -74,8 +75,6 @@ static int sensor_fusion_ahrs_trim_low_imu_values(FusionVector *accel_vector,
             gyro_vector->array[i] = 0.0f;
         }
     }
-
-    return 0;
 }
 
 static int sensor_fusion_ahrs_sample_fetch(const struct device *dev,
@@ -88,6 +87,7 @@ static int sensor_fusion_ahrs_sample_fetch(const struct device *dev,
     FusionVector gyro_vector;
     FusionVector magn_vector;
     float delta_time_seconds;
+    int ret = 0;
 
     __ASSERT_NO_MSG(chan == SENSOR_CHAN_ALL);
 
@@ -97,7 +97,7 @@ static int sensor_fusion_ahrs_sample_fetch(const struct device *dev,
     }
     else
     {
-        err = sensor_channel_get(config->accel_dev, SENSOR_CHAN_ACCEL_XYZ, &imu_values[0]);
+        ret = sensor_channel_get(config->accel_dev, SENSOR_CHAN_ACCEL_XYZ, &imu_values[0]);
     }
 
     /* Check if combined device is used (gyro and accel are in the same IC) */
@@ -110,13 +110,13 @@ static int sensor_fusion_ahrs_sample_fetch(const struct device *dev,
         }
         else
         {
-            err = sensor_channel_get(config->gyro_dev, SENSOR_CHAN_GYRO_XYZ, &imu_values[3]);
+            ret = sensor_channel_get(config->gyro_dev, SENSOR_CHAN_GYRO_XYZ, &imu_values[3]);
         }
     }
     else
     {
         /* Gyro sample already fetched because gyro and accel are in the same IC */
-        err = sensor_channel_get(config->gyro_dev, SENSOR_CHAN_GYRO_XYZ, &imu_values[3]);
+        ret = sensor_channel_get(config->gyro_dev, SENSOR_CHAN_GYRO_XYZ, &imu_values[3]);
     }
 
     /* Check if magnetometer is used for sensor fusion */
@@ -132,13 +132,13 @@ static int sensor_fusion_ahrs_sample_fetch(const struct device *dev,
             }
             else
             {
-                err = sensor_channel_get(config->magn_dev, SENSOR_CHAN_MAGN_XYZ, &imu_values[6]);
+                ret = sensor_channel_get(config->magn_dev, SENSOR_CHAN_MAGN_XYZ, &imu_values[6]);
             }
         }
         else
         {
             /* Magn sample already fetched because magn and accel, or magn and gyro are in the same IC */
-            err = sensor_channel_get(config->magn_dev, SENSOR_CHAN_MAGN_XYZ, &imu_values[6]);
+            ret = sensor_channel_get(config->magn_dev, SENSOR_CHAN_MAGN_XYZ, &imu_values[6]);
         }
     }
 
@@ -160,8 +160,8 @@ static int sensor_fusion_ahrs_sample_fetch(const struct device *dev,
     gyro_vector = FusionOffsetUpdate(&data->gyro_offset_vector,
                                      gyro_vector);
 
-    /* Ignore low IMU values */
-    sensor_fusion_trim_low_imu_values(&accel_vector, &gyro_vector);
+    /* Ignore low values */
+    sensor_fusion_ahrs_trim_low_values(&accel_vector, &gyro_vector);
 
     if (config->magn_dev)
     {
@@ -176,6 +176,9 @@ static int sensor_fusion_ahrs_sample_fetch(const struct device *dev,
                          accel_vector,
                          magn_vector,
                          delta_time_seconds);
+
+        /* Calculate magnetic heading */
+        data->magnetic_heading = FusionCompassCalculateHeading(config->ahrs_settings.convention, accel_vector, magn_vector);
     }
     else
     {
@@ -189,7 +192,7 @@ static int sensor_fusion_ahrs_sample_fetch(const struct device *dev,
     /* Calculate euler angles from quaternions */
     data->euler = FusionQuaternionToEuler(FusionAhrsGetQuaternion(&data->ahrs));
 
-    return 0;
+    return ret;
 }
 
 static int sensor_fusion_ahrs_channel_get(const struct device *dev,
@@ -197,49 +200,50 @@ static int sensor_fusion_ahrs_channel_get(const struct device *dev,
                                           struct sensor_value *val)
 {
     struct sensor_fusion_ahrs_data *data = dev->data;
+    int ret = 0;
 
-    if (chan == SENSOR_FUSION_CHAN_YAW)
+    switch (chan)
     {
+    case SENSOR_FUSION_CHAN_YAW:
         sensor_value_from_float(val, data->euler.angle.yaw);
-    }
-    else if (chan == SENSOR_FUSION_CHAN_PITCH)
-    {
+        break;
+    case SENSOR_FUSION_CHAN_PITCH:
         sensor_value_from_float(val, data->euler.angle.pitch);
-    }
-    else if (chan == SENSOR_FUSION_CHAN_ROLL)
-    {
+        break;
+    case SENSOR_FUSION_CHAN_ROLL:
         sensor_value_from_float(val, data->euler.angle.roll);
-    }
-    else if (chan == SENSOR_FUSION_CHAN_YAW_PITCH_ROLL)
-    {
+        break;
+    case SENSOR_FUSION_CHAN_YAW_PITCH_ROLL:
         sensor_value_from_float(&val[0], data->euler.angle.yaw);
         sensor_value_from_float(&val[1], data->euler.angle.pitch);
         sensor_value_from_float(&val[2], data->euler.angle.roll);
-    }
-    else if (chan == SENSOR_FUSION_CHAN_LINEAR_ACCEL_XYZ)
-    {
+        break;
+    case SENSOR_FUSION_CHAN_LINEAR_ACCEL_XYZ:
         FusionVector fusion_vector;
         fusion_vector = FusionAhrsGetLinearAcceleration(&data->ahrs);
 
         sensor_value_from_float(&val[0], fusion_vector.axis.x);
         sensor_value_from_float(&val[1], fusion_vector.axis.y);
         sensor_value_from_float(&val[2], fusion_vector.axis.z);
-    }
-    else if (chan == SENSOR_FUSION_CHAN_EARTH_ACCEL_XYZ)
-    {
+        break;
+    case SENSOR_FUSION_CHAN_EARTH_ACCEL_XYZ:
         FusionVector fusion_vector;
         fusion_vector = FusionAhrsGetEarthAcceleration(&data->ahrs);
 
         sensor_value_from_float(&val[0], fusion_vector.axis.x);
         sensor_value_from_float(&val[1], fusion_vector.axis.y);
         sensor_value_from_float(&val[2], fusion_vector.axis.z);
-    }
-    else
-    {
-        return -ENOTSUP;
+        break;
+    case SENSOR_FUSION_CHAN_MAGNETIC_HEADING:
+        sensor_value_from_float(&val[0], data->magnetic_heading);
+        break;
+    default:
+        LOG_ERR("Channel not supported.");
+        ret = -ENOTSUP;
+        break;
     }
 
-    return 0;
+    return ret;
 }
 
 static int sensor_fusion_ahrs_attr_set(const struct device *dev, enum sensor_channel chan,
@@ -290,7 +294,7 @@ static int sensor_fusion_ahrs_attr_set(const struct device *dev, enum sensor_cha
         }
         break;
     default:
-        LOG_ERR("Sensor fusion AHRS attribute not supported.");
+        LOG_ERR("Attribute not supported.");
         ret = -ENOTSUP;
         break;
     }
@@ -345,7 +349,7 @@ static int sensor_fusion_ahrs_attr_get(const struct device *dev, enum sensor_cha
         }
         break;
     default:
-        LOG_ERR("Sensor fusion AHRS attribute not supported.");
+        LOG_ERR("Attribute not supported.");
         ret = -ENOTSUP;
         break;
     }
