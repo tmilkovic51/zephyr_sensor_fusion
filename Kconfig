@@ -21,6 +21,20 @@ config SENSOR_FUSION_AHRS
 
 if SENSOR_FUSION_AHRS
 
+config SENSOR_FUSION_AHRS_ACCEL_ZERO_TRIM_THRESHOLD_MILLIG
+    int "AHRS acceleration threshold which will be trimmed to 0"
+    default 350
+    help
+      Algorithm will trim acceleration values lower than this option to 0.
+      Default value is 350 millig (0.35 g).
+
+config SENSOR_FUSION_AHRS_GYRO_ZERO_TRIM_THRESHOLD_MILLIDEGREES
+    int "AHRS rotational speed threshold which will be trimmed to 0"
+    default 2100
+    help
+      Algorithm will trim rotational speed values lower than this option to 0.
+      Default value is 2100 millidegrees (2.1 degrees).
+
 # Logging subsystem configuration:
 module = SENSOR_FUSION_AHRS
 module-str = sensor_fusion_ahrs

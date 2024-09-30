@@ -38,3 +38,70 @@ properties:
       Phandle of the magnetometer device to be used for sensor fusion.
       If not present, sensor fusion will be done with accelerometer
       and gyroscope only.
+
+  earth-axes-convention:
+    type: int
+    description: |
+      Earth axes convention. Possible values:
+        0 = North-West-Up
+        1 = East-North-Up
+        2 = North-East-Down
+    default: 0
+    enum:
+      - 0
+      - 1
+      - 2
+
+  gyro-gain:
+    type: int
+    description: |
+       Determines the influence of the gyroscope relative to other
+       sensors, in percent. A value of zero percent will disable
+       initialisation and the acceleration and magnetic rejection
+       features. A value of 50 is appropriate for most applications.
+    default: 50
+
+  gyro-range:
+    type: int
+    description: |
+        Gyroscope range, in degrees per second. Angular rate recovery
+        will activate if the gyroscope measurement exceeds 98% of this
+        value. A value of zero will disable this feature.
+        The value should be set to the range specified in the
+        gyroscope datasheet. Default is 250 degrees per second (dps).
+    default: 250
+
+  accel-rejection:
+    type: int
+    description: |
+        Threshold (in degrees) used by the acceleration rejection
+        feature. A value of zero will disable this feature.
+        A value of 10 degrees is appropriate for most applications.
+    default: 10
+
+  magn-rejection:
+    type: int
+    description: |
+        Threshold (in degrees) used by the magnetic rejection
+        feature. A value of zero will disable the feature.
+        A value of 10 degrees is appropriate for most applications.
+    default: 10
+
+  recovery-trigger-period:
+    type: int
+    description: |
+        Acceleration and magnetic recovery trigger period, in samples.
+        A value of zero will disable the acceleration and magnetic
+        rejection features. A period of 5 seconds is appropriate
+        for most applications. If collecting 100 samples per second,
+        the appropriate value would be 500 samples.
+    default: 500
+
+  target-sample-rate-hz:
+    type: int
+    description: |
+        Target sample rate of running the sensor fusion algorithm, in Hz.
+        Set this to number of sensor_sample_fetch function calls you plan
+        to implement in your application code.
+        Default value is 100 Hz (100 times per second).
+    default: 100
