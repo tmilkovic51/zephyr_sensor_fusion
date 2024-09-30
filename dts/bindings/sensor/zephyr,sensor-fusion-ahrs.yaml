@@ -12,6 +12,13 @@ description: |
       accel-dev = <&accel0>; /* Accelerometer device phandle */
       gyro-dev = <&gyro0>; /* Gyroscope device phandle */
       magn-dev = <&magn0>; /* Magnetometer device phandle */
+      earth-axes-convention = <0>; /* North-West-Up convention */
+      gyro-gain = <50>; /* Gyroscope gain of 0.5x */
+      gyro-range = <250>; /* Gyroscope full scale range: 250 dps */
+      accel-rejection = <10>; /* In degrees */
+      magn-rejection = <10>; /* In degrees */
+      recovery-trigger-period = <500>; /* In samples */
+      target-sample-rate-hz = <100>;
     }
   }
 
