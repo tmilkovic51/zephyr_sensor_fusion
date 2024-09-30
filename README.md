@@ -47,11 +47,23 @@ can be found here: https://github.com/xioTechnologies/Fusion/
     You need to have accelerometer, gyroscope and, optionally, magnetometer devices
     present and enabled in your board device tree.
 
+    To configure other AHRS algorithm settings, please take a look at the
+    [bindings file](dts/bindings/sensor/zephyr,sensor-fusion-ahrs.yaml).
+
 3. Use the driver from your application code
 
     Include `<sensor_fusion/sensor_fusion.h>` header file in your application and
-    call Zephyr sensor API functions with custom-made sensor fusion channels:
-    - `SENSOR_FUSION_CHAN_YAW` for yaw value, in degrees
-    - `SENSOR_FUSION_CHAN_PITCH` for pitch value, in degrees
-    - `SENSOR_FUSION_CHAN_ROLL` for roll value, in degrees
-    - `SENSOR_FUSION_CHAN_YAW_PITCH_ROLL` for all values, in degrees
+    call Zephyr sensor API `fetch` and `get` functions with custom-made sensor fusion channels:
+    - `SENSOR_FUSION_CHAN_YAW` - Euler angle - yaw, in degrees
+    - `SENSOR_FUSION_CHAN_PITCH` Euler angle - pitch, in degrees
+    - `SENSOR_FUSION_CHAN_ROLL` Euler angle - roll, in degrees
+    - `SENSOR_FUSION_CHAN_YAW_PITCH_ROLL` - all three Euler angles (yaw, pitch, roll), in degrees
+    - `SENSOR_FUSION_CHAN_LINEAR_ACCEL_XYZ` - Linear acceleration measurement equal to the accelerometer
+        measurement with 1 g of gravity removed, in g
+    - `SENSOR_FUSION_CHAN_EARTH_ACCEL_XYZ` - Earth acceleration measurement equal to accelerometer measurement
+        in the Earth coordinate frame with 1 g of gravity removed, in g
+    - `SENSOR_FUSION_CHAN_MAGNETIC_HEADING` - magnetic heading in convention configured in device tree, in degrees
+
+    There are also custom-made attributes that can be used with Zephyr `attr_set` and `attr_get` API:
+    - `SENSOR_FUSION_ATTR_MAGN_HARD_IRON_VECTOR` - magnetometer hard ironing 3D vector, in X-Y-Z order, applied to each magnetometer measurement
+    - `SENSOR_FUSION_ATTR_MAGN_SOFT_IRON_MATRIX` - magnetometer soft ironing 3x3 matrix, in row-major order, applied to each magnetometer measurement
